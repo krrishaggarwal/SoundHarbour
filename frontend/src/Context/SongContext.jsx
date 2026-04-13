@@ -3,35 +3,45 @@ import { createContext, useState, useRef } from "react";
 export const SongContext = createContext();
 
 export const SongContextState = ({ children }) => {
-  let __URL__;
-  if(document.domain === "localhost"){
-    __URL__ = "http://localhost:1337"
-  }else{
-    __URL__ = "https://music-player-app-backend-yq0c.onrender.com"
-  }
-  const audio = new Audio();
-  const song = {
-    songUrl: "",
-    songName: "",
-    songArtist: "",
-    songAlbum: "",
-    isPlaying: false,
+  // 🌐 Backend URL
+  const __URL__ =
+    document.domain === "localhost"
+      ? "http://localhost:1337"
+      : "https://music-player-app-backend-yq0c.onrender.com";
 
-    setSongUrl: (url) => {
-      song.songUrl = url;
-    },
-    setSongName: (name) => {
-      song.songName = name;
-    },
-    setArtistName: (name) => {
-      song.songArtist = name;
-    },
-    setAlbumName: (name) => song.songAlbum = name,
-    setIsPlaying : ( val )=>{
-      song.isPlaying = val
-    },
-    
-  };
+  // 🎧 Single audio instance (IMPORTANT)
+  const audioRef = useRef(new Audio());
+  const audio = audioRef.current;
 
-  return <SongContext.Provider value={{audio,song,__URL__}}>{children}</SongContext.Provider>;
+  // 🎵 Song state (REACTIVE)
+  const [songName, setSongName] = useState("");
+  const [songArtist, setSongArtist] = useState("");
+  const [songUrl, setSongUrl] = useState("");
+  const [songAlbum, setSongAlbum] = useState("");
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  return (
+    <SongContext.Provider
+      value={{
+        audio,
+        __URL__,
+
+        // state
+        songName,
+        songArtist,
+        songUrl,
+        songAlbum,
+        isPlaying,
+
+        // setters
+        setSongName,
+        setSongArtist,
+        setSongUrl,
+        setSongAlbum,
+        setIsPlaying,
+      }}
+    >
+      {children}
+    </SongContext.Provider>
+  );
 };

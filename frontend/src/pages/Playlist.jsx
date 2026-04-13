@@ -1,94 +1,125 @@
-import React, { useEffect, useState,useContext } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
+
 import { FetchContext } from "../Context/FetchContext";
 import { SongContext } from "../Context/SongContext";
-import PlaylilstSong from "../components/PlaylilstSong";
+import PlaylistSong from "../components/PlaylistSong";
+
 import { MdDeleteForever } from "react-icons/md";
 
 const Playlist = () => {
-  const { id } = useParams();  //gettnig the id from the url
-  const navigate = useNavigate(); // for navigation
-  const [playList, setPlayList] = useState(null); // state for the playlist
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const { fetchPlaylist } = useContext(FetchContext);
+  const { __URL__ } = useContext(SongContext);
+
+  const [playlist, setPlaylist] = useState(null);
   const [loading, setLoading] = useState(false);
-  const {fetchPlaylist} = useContext(FetchContext)
-  const {__URL__} = useContext(SongContext)
-  
-  // headers for the api calls
+
+  const token = localStorage.getItem("token");
+
   const headers = {
-    "Content-Type": "application/json",
-    "X-Auth-Token": localStorage.getItem("access_token"),
+    "x-auth-token": token,
   };
 
-  // delete playlist
+  // ❌ Delete playlist
   const deletePlaylist = async () => {
-    setLoading(true);
-    const { data, status } = await axios.delete(
-      `https://music-player-app-backend-yq0c.onrender.com/api/v1/playlist/delete/${id}`,
-      { headers }
-    );
-    if (status === 200) {
+    try {
+      setLoading(true);
+
+      const { status } = await axios.delete(
+        `${__URL__}/api/v1/playlist/delete/${id}`,
+        { headers }
+      );
+
+      if (status === 200) {
+        alert("Playlist deleted");
+        navigate("/playlists");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting playlist");
+    } finally {
       setLoading(false);
-      alert("Playlist deleted successfully");
-      navigate("/playlists");
     }
   };
 
-  // confirm delete and handle delete
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this playlist?")) {
+    if (window.confirm("Delete this playlist?")) {
       deletePlaylist();
     }
   };
 
-  // get playlist
+  // 📥 Get playlist
   const getPlaylist = async () => {
-    const { data } = await axios.get(
-      `${__URL__}/api/v1/playlist/${id}`,
-      { headers }
-    );
-    setPlayList(data["playlist"]);
+    try {
+      setLoading(true);
+
+      const { data } = await axios.get(
+        `${__URL__}/api/v1/playlist/${id}`,
+        { headers }
+      );
+
+      setPlaylist(data.playlist);
+    } catch (err) {
+      console.error(err);
+      setPlaylist(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // fetch playlist on load
   useEffect(() => {
     getPlaylist();
   }, [fetchPlaylist]);
 
-  return loading || playList === null ? (
-    <div>Loading...</div>
-  ) : !loading && playList !== null ? (
+  if (loading) {
+    return <div className="text-white p-5">Loading...</div>;
+  }
+
+  if (!playlist) {
+    return <div className="text-white p-5">Playlist not found</div>;
+  }
+
+  return (
     <div className="bg-slate-800 text-white p-5 min-h-screen space-y-5 flex flex-col lg:items-center">
-      <div className="lg:mt-10 flex justify-between items-center px-1 lg:w-[70vw]">
+
+      {/* 🎵 Header */}
+      <div className="flex justify-between items-center w-full lg:w-[70vw] mt-5">
         <div>
-          <h2 className="text-xl lg:text-4xl">{playList.playlistName}</h2>
-          <p className="text-md lg:text-lg`">Songs - {playList.songs.length} </p>
+          <h2 className="text-xl lg:text-3xl font-semibold">
+            {playlist.playlistName}
+          </h2>
+          <p>Songs - {playlist.songs.length}</p>
         </div>
-        <div>
-          <button onClick={handleDelete}>
-            <MdDeleteForever size={25} />
-          </button>
-        </div>
+
+        {/* ❌ Delete */}
+        <button onClick={handleDelete}>
+          <MdDeleteForever size={28} />
+        </button>
       </div>
-      <div className="space-y-2">
-        {playList.songs.length === 0 ? (
-          <div>No songs in this playlist</div>
+
+      {/* 🎧 Songs */}
+      <div className="space-y-2 w-full lg:w-[70vw]">
+        {playlist.songs.length === 0 ? (
+          <p>No songs in this playlist</p>
         ) : (
-          playList.songs.map((song, index) => {
-            return (
-              <PlaylilstSong
-                key={index}
-                title={song.title}
-                artistName={song.artistName}
-                songSrc={song.songSrc}
-                playlistId={id}
-              />
-            );
-          })
+          playlist.songs.map((song, index) => (
+            <PlaylistSong
+              key={index}
+              title={song.title}
+              artistName={song.artistName}
+              fileId={song.fileId}
+              playlistId={id}
+            />
+          ))
         )}
       </div>
+
     </div>
-  ) : null;
+  );
 };
 
 export default Playlist;

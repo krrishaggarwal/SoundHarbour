@@ -1,16 +1,18 @@
 import { MongoClient } from "mongodb";
-import dontenv from "dotenv";
+import dotenv from "dotenv";
 
-dontenv.config();
+dotenv.config();
 
-// Create a new MongoClient
-const client = new MongoClient(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const client = new MongoClient(process.env.MONGO_URI);
 
-const conn = await client.connect();
-conn.once("open", () => {
-  console.log("MongoDB database connection established successfully");
-});
+let conn;
+
+try {
+  conn = await client.connect();
+  console.log("MongoDB connected successfully");
+} catch (err) {
+  console.error("MongoDB connection error:", err);
+  process.exit(1);
+}
+
 export default conn;

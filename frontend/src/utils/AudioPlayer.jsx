@@ -1,90 +1,148 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import stereo from "../assets/stereo.jpg";
 import { SongContext } from "../Context/SongContext";
+import { QueueContext } from "../Context/QueueContex";
 
 import { CiPlay1, CiPause1 } from "react-icons/ci";
 import { FiSkipBack, FiSkipForward } from "react-icons/fi";
 
 const AudioPlayer = () => {
-  const { song, audio,  } = useContext(SongContext);
- 
+  const {
+    audio,
+    __URL__,
+    songName,
+    songArtist,
+    songUrl,
+    isPlaying,
+    setSongName,
+    setSongArtist,
+    setSongUrl,
+    setIsPlaying,
+  } = useContext(SongContext);
+
+  const { queue, dispatchQueue } = useContext(QueueContext);
 
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
 
   const progressBar = useRef();
- 
-  useEffect(() => {
-    audio.addEventListener("loadedmetadata", () => {
-      setDuration(audio.duration);
-      progressBar.current.max = audio.duration;
-      console.log(progressBar)
-      console.log(audio)
-    });
-    audio.addEventListener("timeupdate", () => {
-      
-      setCurrentTime(audio.currentTime);
-      progressBar.current.value = `${
-        (audio.currentTime / audio.duration) * 100
-      }%`;
-    });
-  }, [audio.src]);
 
-  // Toggle play/pause
+  // 🎧 Sync audio events
+  useEffect(() => {
+    if (!audio) return;
+
+    const handleLoaded = () => {
+      setDuration(audio.duration || 0);
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime || 0);
+    };
+
+    audio.addEventListener("loadedmetadata", handleLoaded);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+
+    return () => {
+      audio.removeEventListener("loadedmetadata", handleLoaded);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, [audio]);
+
+  // ▶️ Play / Pause
   const togglePlayPause = () => {
-    if (song.songUrl == "") return;
-    if (audio.paused) audio.play();
-    else audio.pause();
-    song.setIsPlaying(!song.isPlaying);
+    if (!songUrl) return;
+
+    if (audio.paused) {
+      audio.play();
+      setIsPlaying(true);
+    } else {
+      audio.pause();
+      setIsPlaying(false);
+    }
   };
 
-  // Calculate time
-  const calculateTime = (secs) => {
-    const minutes = Math.floor(secs / 60);
-    const returnedMinutes = minutes < 10 ? `0${minutes}` : `${minutes}`;
-    const seconds = Math.floor(secs % 60);
-    const returnedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
-    return `${returnedMinutes}:${returnedSeconds}`;
+  // ⏭️ Next song (queue)
+  const playNext = () => {
+    if (queue.length === 0) return;
+
+    const next = queue[0];
+
+    audio.src = `${__URL__}/api/v1/song/stream/${next.fileId}`;
+    audio.load();
+    audio.play();
+
+    setSongName(next.title);
+    setSongArtist(next.artistName);
+    setSongUrl(next.fileId);
+    setIsPlaying(true);
+
+    dispatchQueue({
+      type: "REMOVE_FROM_QUEUE",
+      payload: next.songSrc,
+    });
+  };
+
+  // ⏮️ Previous (basic restart)
+  const playPrev = () => {
+    audio.currentTime = 0;
+  };
+
+  // 🎚️ Seek
+  const handleSeek = (e) => {
+    const time = e.target.value;
+    audio.currentTime = time;
+    setCurrentTime(time);
+  };
+
+  // ⏱️ Format time
+  const formatTime = (secs) => {
+    if (!secs) return "00:00";
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m < 10 ? "0" + m : m}:${s < 10 ? "0" + s : s}`;
   };
 
   return (
-    <div
-    className="fixed flex justify-between items-center bottom-0 right-0 left-0 bg-gray-900 text-white px-3 lg:px-5 py-2 shadow-xl"
-  >
-      <div className="flex space-x-5">
-        <img src={stereo} alt="" className="rounded-lg w-12" />
+    <div className="fixed bottom-0 left-0 right-0 bg-gray-900 text-white px-4 py-2 flex justify-between items-center">
+
+      {/* 🎵 Song Info */}
+      <div className="flex items-center space-x-3">
+        <img src={stereo} alt="song" className="w-12 rounded" />
         <div>
-          <h3 className="text-lg">{song.songName}</h3>
-          <p className="text-sm">{song.songArtist}</p>
+          <h3>{songName || "No song"}</h3>
+          <p className="text-sm text-gray-400">{songArtist}</p>
         </div>
       </div>
 
-    
-      <div className="flex space-x-3 lg:space-x-5">
-        <button>
+      {/* 🎮 Controls */}
+      <div className="flex items-center space-x-4">
+        <button onClick={playPrev}>
           <FiSkipBack />
         </button>
+
         <button onClick={togglePlayPause}>
-          { song.isPlaying == true ? <CiPause1 /> : <CiPlay1 />}
+          {isPlaying ? <CiPause1 /> : <CiPlay1 />}
         </button>
-        <button>
+
+        <button onClick={playNext}>
           <FiSkipForward />
         </button>
       </div>
 
-      <div className="hidden lg:flex space-x-5">
-        {/* <input
+      {/* 🎚️ Progress */}
+      <div className="hidden lg:flex items-center space-x-3 w-[300px]">
+        <span>{formatTime(currentTime)}</span>
+
+        <input
           type="range"
           min="0"
-          ref={progressBar}
-          defaultValue="0"
-          className=" "
-          step={"any"}
-        /> */}
-        <p>
-          {calculateTime(parseInt(currentTime))}/
-          {calculateTime(parseInt(duration))}
-        </p>
+          max={duration}
+          value={currentTime}
+          onChange={handleSeek}
+          className="w-full"
+        />
+
+        <span>{formatTime(duration)}</span>
       </div>
     </div>
   );

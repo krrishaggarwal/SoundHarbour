@@ -1,15 +1,18 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useEffect } from "react";
 import { SidebarContext } from "../Context/SibebarContext";
 import bg from "../assets/bg4.jpg";
-import '../utils/style.css'
 import { Link } from "react-router-dom";
+
 const Home = () => {
   const { showMenu, setShowMenu } = useContext(SidebarContext);
+
   useEffect(() => {
     if (showMenu) setShowMenu(false);
-  }, []);
+  }, [showMenu]);
 
-  const token = localStorage.getItem("access_token") || null;
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role"); // 👈 important
+
   return (
     <div
       className="w-full min-h-screen flex justify-center items-center flex-col"
@@ -19,20 +22,53 @@ const Home = () => {
         backgroundRepeat: "no-repeat",
       }}
     >
-     <div className="flex flex-col justify-center items-center space-y-6 bg-[rgba(0,0,0,0.5)] w-full h-screen lg:space-y-8">
-        <h1 className="text-4xl lg:text-6xl text-white font-extrabold drop-shadow-lg">
+      <div className="flex flex-col justify-center items-center space-y-6 bg-black/60 w-full h-screen">
+
+        {/* Title */}
+        <h1 className="text-4xl lg:text-6xl text-white font-bold">
           Music Stream
         </h1>
-        <p className="text-white text-2xl lg:text-4xl drop-shadow-md">
+
+        {/* Subtitle */}
+        <p className="text-white text-xl lg:text-3xl">
           Listen to your favorite songs
         </p>
-        <div className="flex flex-col lg:flex-row space-y-5 lg:space-y-0 lg:space-x-5">
-          {
-            (token ? ( <Link to={'/upload'} className="bg-lime-300 w-32 py-1 rounded-md flex justify-center text-[#461e74]">Upload</Link>):(
-                <Link to={'/login'} className="bg-lime-300 w-32 py-1 rounded-md flex justify-center text-[#461e74]">Login</Link>
-            ))
-          }
-          <Link to={'/explore'} className="bg-lime-300 w-32 py-1 rounded-md flex justify-center text-[#461e74]">Stream</Link>
+
+        {/* Buttons */}
+        <div className="flex flex-col lg:flex-row gap-4">
+
+          {/* ADMIN ONLY */}
+          {token && role === "admin" ? (
+            <Link
+              to="/upload"
+              className="bg-lime-300 px-6 py-2 rounded text-purple-900"
+            >
+              Upload
+            </Link>
+          ) : token ? (
+            <Link
+              to="/explore"
+              className="bg-lime-300 px-6 py-2 rounded text-purple-900"
+            >
+              Start Listening
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="bg-lime-300 px-6 py-2 rounded text-purple-900"
+            >
+              Login
+            </Link>
+          )}
+
+          {/* Stream button */}
+          <Link
+            to="/explore"
+            className="bg-lime-300 px-6 py-2 rounded text-purple-900"
+          >
+            Stream
+          </Link>
+
         </div>
       </div>
     </div>

@@ -2,38 +2,47 @@ import { createContext, useReducer } from "react";
 
 export const QueueContext = createContext();
 
-const addSongToQueue = (state, action) => {
+const queueReducer = (state, action) => {
   switch (action.type) {
     case "ADD_TO_QUEUE":
+      if (state.find((s) => s.fileId === action.payload.fileId)) return state;
       return [...state, action.payload];
     case "REMOVE_FROM_QUEUE":
-      return state.filter((song) => song._id !== action.payload);
+      return state.filter((s) => s.fileId !== action.payload);
+    case "CLEAR_QUEUE":
+      return [];
     default:
       return state;
   }
 };
 
-const addSongToList = (state, action) => {
+const listReducer = (state, action) => {
   switch (action.type) {
     case "ADD_SONG":
+      if (state.find((s) => s.fileId === action.payload.fileId)) return state;
       return [...state, action.payload];
     case "REMOVE_SONG":
-      return state.filter((song) => song.title !== action.payload);
+      return state.filter((s) => s.fileId !== action.payload);
+    case "CLEAR_LIST":
+      return [];
     default:
       return state;
   }
 };
-
 export const QueueContextState = ({ children }) => {
-  const initialQueue = [
-    
-  ];
-  const initialList = [];
+  const [queue, dispatchQueue] = useReducer(queueReducer, []);
+  const [list, dispatchList] = useReducer(listReducer, []);
 
-  const [queue, dispatchQueue] = useReducer(addSongToQueue, initialQueue);
-  const [list, dispatchList] = useReducer(addSongToList, initialList);
-
-  return (<QueueContext.Provider value={{list,queue,dispatchList,dispatchQueue}}>
-    {children}
-  </QueueContext.Provider>);
+  return (
+    <QueueContext.Provider
+      value={{
+        queue,
+        dispatchQueue,
+        list,
+        dispatchList,
+      }}
+    >
+      {children}
+    </QueueContext.Provider>
+  );
 };
