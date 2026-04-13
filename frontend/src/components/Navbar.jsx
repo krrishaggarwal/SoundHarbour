@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import { SidebarContext } from "../Context/SibebarContext";
 import { NavLink, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -8,17 +8,26 @@ import { GoHome } from "react-icons/go";
 import { GiMusicSpell } from "react-icons/gi";
 import { TfiWrite } from "react-icons/tfi";
 import { CgPlayList } from "react-icons/cg";
-import { BiWindowClose } from "react-icons/bi";
-import { FiMenu, FiUser, FiMessageCircle, FiUsers, FiBell } from "react-icons/fi";
+import { FiMenu, FiUser, FiMessageCircle, FiUsers, FiX } from "react-icons/fi";
 
-const NavAvatar = ({ name }) => {
+const NavAv = ({ name }) => {
   const initials = name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?";
   return (
-    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-xs font-bold text-white">
+    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+      style={{ background: "linear-gradient(135deg, var(--accent), #ea580c)" }}>
       {initials}
     </div>
   );
 };
+
+const navLink = (isActive) => ({
+  display: "flex", alignItems: "center", gap: "7px", fontSize: "14px", fontWeight: 500,
+  color: isActive ? "var(--accent)" : "var(--text-2)",
+  transition: "color 0.15s",
+  padding: "4px 2px",
+  textDecoration: "none",
+  borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent",
+});
 
 const Navbar = () => {
   const { showMenu, setShowMenu } = useContext(SidebarContext);
@@ -29,121 +38,146 @@ const Navbar = () => {
   const role     = localStorage.getItem("role");
   const fullName = localStorage.getItem("fullName");
 
-  const [pendingRequests, setPendingRequests] = useState(0);
-  const [unreadMessages,  setUnreadMessages]  = useState(0);
+  const [pendingReqs,  setPendingReqs]  = useState(0);
+  const [unreadMsgs,   setUnreadMsgs]   = useState(0);
 
-  useEffect(() => {
+  const loadBadges = useCallback(async () => {
     if (!token) return;
-    const headers = { "x-auth-token": token };
-    const load = async () => {
-      try {
-        const [reqRes, convRes] = await Promise.all([
-          axios.get(`${__URL__}/api/v1/follow/requests`,     { headers }),
-          axios.get(`${__URL__}/api/v1/chat/conversations`,  { headers }),
-        ]);
-        setPendingRequests(reqRes.data.requests?.length || 0);
-        setUnreadMessages((convRes.data.conversations || []).reduce((s, c) => s + (c.unreadCount || 0), 0));
-      } catch {}
-    };
-    load();
-    const interval = setInterval(load, 30000); // poll every 30s
-    return () => clearInterval(interval);
+    try {
+      const headers = { "x-auth-token": token };
+      const [reqRes, convRes] = await Promise.all([
+        axios.get(`${__URL__}/api/v1/follow/requests`,    { headers }),
+        axios.get(`${__URL__}/api/v1/chat/conversations`, { headers }),
+      ]);
+      setPendingReqs(reqRes.data.requests?.length || 0);
+      setUnreadMsgs((convRes.data.conversations || []).reduce((s, c) => s + (c.unreadCount || 0), 0));
+    } catch {}
   }, [token, __URL__]);
 
+  useEffect(() => {
+    loadBadges();
+    const t = setInterval(loadBadges, 30000);
+    return () => clearInterval(t);
+  }, [loadBadges]);
+
   const logOut = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("fullName");
+    ["token","role","fullName"].forEach((k) => localStorage.removeItem(k));
     navigate("/");
   };
 
-  const linkClass = ({ isActive }) =>
-    isActive ? "flex items-center space-x-2 text-yellow-400" : "flex items-center space-x-2 text-white";
+  const Badge = ({ count }) => count > 0 ? (
+    <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full text-[9px] font-bold flex items-center justify-center"
+      style={{ background: "#ef4444", color: "#fff" }}>
+      {count > 9 ? "9+" : count}
+    </span>
+  ) : null;
 
-  const BadgeIcon = ({ icon: Icon, count, size = 18 }) => (
-    <div className="relative">
-      <Icon size={size} />
-      {count > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-          {count > 9 ? "9+" : count}
-        </span>
-      )}
-    </div>
+  const NavIcon = ({ Icon, count }) => (
+    <div className="relative"><Icon size={17} /><Badge count={count} /></div>
   );
 
   return (
-    <header className="z-50 w-full sticky top-0 bg-gray-900 text-white shadow-lg">
-      <nav className="w-full flex justify-between items-center px-6 py-3">
-        <NavLink to="/" className="text-xl font-bold">SoundHarbour</NavLink>
-        <button onClick={() => setShowMenu(!showMenu)} className="lg:hidden"><FiMenu size={25} /></button>
+    <header className="z-50 w-full sticky top-0" style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
+      <nav className="max-w-screen-xl mx-auto w-full flex justify-between items-center px-5 h-14">
 
-        {/* Mobile sidebar */}
-        <div className={`lg:hidden fixed top-0 right-0 w-64 h-full bg-gray-900 p-6 space-y-6 transition-transform duration-300 z-50
-          ${showMenu ? "translate-x-0" : "translate-x-full"}`}>
-          <NavLink to="/" className={linkClass}><GoHome /><span>Home</span></NavLink>
-          <NavLink to="/explore" className={linkClass}><GiMusicSpell /><span>Songs</span></NavLink>
-          {role === "admin" && <NavLink to="/upload" className={linkClass}><TfiWrite /><span>Upload</span></NavLink>}
-          <NavLink to="/playlists" className={linkClass}><CgPlayList /><span>Playlists</span></NavLink>
-          {token && (
-            <>
-              <NavLink to="/people" className={linkClass}>
-                <div className="relative"><FiUsers size={18} />
-                  {pendingRequests > 0 && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 rounded-full text-[8px] font-bold flex items-center justify-center">{pendingRequests}</span>}
-                </div>
-                <span>People</span>
-              </NavLink>
-              <NavLink to="/chat" className={linkClass}>
-                <div className="relative"><FiMessageCircle size={18} />
-                  {unreadMessages > 0 && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 rounded-full text-[8px] font-bold flex items-center justify-center">{unreadMessages}</span>}
-                </div>
-                <span>Chat</span>
-              </NavLink>
-              <NavLink to="/profile" className={linkClass}><FiUser /><span>Profile</span></NavLink>
-            </>
-          )}
-          {token
-            ? <button onClick={logOut} className="bg-yellow-400 text-black px-4 py-1 rounded">Log Out</button>
-            : <><NavLink to="/login" className="text-yellow-400">Log In</NavLink><NavLink to="/register" className="text-yellow-400">Sign Up</NavLink></>
-          }
-          <button onClick={() => setShowMenu(false)} className="flex items-center space-x-2"><BiWindowClose /><span>Close</span></button>
-        </div>
+        {/* Logo */}
+        <NavLink to="/" className="text-lg font-black tracking-tight" style={{ color: "var(--text-1)" }}>
+          Musically
+        </NavLink>
 
-        {/* Desktop nav */}
-        <div className="hidden lg:flex items-center space-x-6">
-          <NavLink to="/" className={linkClass}><GoHome /><span>Home</span></NavLink>
-          <NavLink to="/explore" className={linkClass}><GiMusicSpell /><span>Songs</span></NavLink>
-          {role === "admin" && <NavLink to="/upload" className={linkClass}><TfiWrite /><span>Upload</span></NavLink>}
-          <NavLink to="/playlists" className={linkClass}><CgPlayList /><span>Playlists</span></NavLink>
+        {/* Mobile hamburger */}
+        <button onClick={() => setShowMenu(!showMenu)} className="lg:hidden p-1"
+          style={{ color: "var(--text-2)" }}>
+          <FiMenu size={22} />
+        </button>
+
+        {/* ── Mobile Sidebar ── */}
+        {showMenu && (
+          <div className="fixed inset-0 z-50 flex lg:hidden">
+            <div className="absolute inset-0 bg-black/60" onClick={() => setShowMenu(false)} />
+            <div className="relative ml-auto w-64 h-full flex flex-col py-6 px-5 space-y-5"
+              style={{ background: "var(--bg-raised)" }}>
+              <button onClick={() => setShowMenu(false)} className="self-end mb-2"
+                style={{ color: "var(--text-3)" }}>
+                <FiX size={20} />
+              </button>
+              {[
+                ["/", <GoHome size={17} />, "Home"],
+                ["/explore", <GiMusicSpell size={17} />, "Songs"],
+                ...(role === "admin" ? [["/upload", <TfiWrite size={17} />, "Upload"]] : []),
+                ["/playlists", <CgPlayList size={17} />, "Playlists"],
+                ...(token ? [
+                  ["/people",  <NavIcon Icon={FiUsers}         count={pendingReqs} />, "People"],
+                  ["/chat",    <NavIcon Icon={FiMessageCircle} count={unreadMsgs}  />, "Chat"],
+                  ["/profile", <FiUser size={17} />, "Profile"],
+                ] : []),
+              ].map(([to, icon, label]) => (
+                <NavLink key={to} to={to} onClick={() => setShowMenu(false)}
+                  style={({ isActive }) => navLink(isActive)}>
+                  {icon} {label}
+                </NavLink>
+              ))}
+              <div className="pt-4 border-t" style={{ borderColor: "var(--border)" }}>
+                {token
+                  ? <button onClick={logOut} className="w-full py-2 rounded-xl font-semibold text-sm"
+                    style={{ background: "var(--accent)", color: "#0a0a0f" }}>Log Out</button>
+                  : <div className="flex gap-3">
+                    <NavLink to="/login"    className="flex-1 text-center py-2 rounded-xl text-sm font-semibold"
+                      style={{ background: "var(--bg-hover)", color: "var(--text-1)" }}>Log In</NavLink>
+                    <NavLink to="/register" className="flex-1 text-center py-2 rounded-xl text-sm font-semibold"
+                      style={{ background: "var(--accent)", color: "#0a0a0f" }}>Sign Up</NavLink>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Desktop Nav ── */}
+        <div className="hidden lg:flex items-center gap-5">
+          {[
+            ["/", <GoHome size={16} />, "Home"],
+            ["/explore", <GiMusicSpell size={16} />, "Songs"],
+            ...(role === "admin" ? [["/upload", <TfiWrite size={16} />, "Upload"]] : []),
+            ["/playlists", <CgPlayList size={16} />, "Playlists"],
+          ].map(([to, icon, label]) => (
+            <NavLink key={to} to={to} style={({ isActive }) => navLink(isActive)}>
+              {icon} <span>{label}</span>
+            </NavLink>
+          ))}
 
           {token ? (
-            <div className="flex items-center gap-4">
-              <NavLink to="/people" className={({ isActive }) =>
-                `flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-colors ${isActive ? "text-yellow-400" : "text-white hover:text-yellow-400"}`}>
-                <BadgeIcon icon={FiUsers} count={pendingRequests} />
-                <span className="text-sm">People</span>
+            <div className="flex items-center gap-3 pl-3" style={{ borderLeft: "1px solid var(--border)" }}>
+              <NavLink to="/people" style={({ isActive }) => navLink(isActive)}>
+                <NavIcon Icon={FiUsers} count={pendingReqs} />
+                <span>People</span>
               </NavLink>
-
-              <NavLink to="/chat" className={({ isActive }) =>
-                `flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-colors ${isActive ? "text-yellow-400" : "text-white hover:text-yellow-400"}`}>
-                <BadgeIcon icon={FiMessageCircle} count={unreadMessages} />
-                <span className="text-sm">Chat</span>
+              <NavLink to="/chat" style={({ isActive }) => navLink(isActive)}>
+                <NavIcon Icon={FiMessageCircle} count={unreadMsgs} />
+                <span>Chat</span>
               </NavLink>
-
-              <NavLink to="/profile" className={({ isActive }) =>
-                `flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${isActive ? "bg-amber-400/20 text-amber-400" : "hover:bg-gray-800 text-white"}`}>
-                {fullName ? <NavAvatar name={fullName} /> : <FiUser size={18} />}
-                <span className="text-sm">Profile</span>
+              <NavLink to="/profile"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors"
+                style={({ isActive }) => ({
+                  background: isActive ? "rgba(245,158,11,0.12)" : "var(--bg-raised)",
+                  border: "1px solid var(--border)",
+                  color: isActive ? "var(--accent)" : "var(--text-1)",
+                })}>
+                {fullName ? <NavAv name={fullName} /> : <FiUser size={15} />}
+                <span className="text-sm font-medium">Profile</span>
               </NavLink>
-
-              <button onClick={logOut} className="bg-yellow-400 text-black px-4 py-1 rounded hover:opacity-80">
+              <button onClick={logOut}
+                className="px-4 py-1.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
+                style={{ background: "var(--accent)", color: "#0a0a0f" }}>
                 Log Out
               </button>
             </div>
           ) : (
-            <>
-              <NavLink to="/login" className="text-yellow-400">Log In</NavLink>
-              <NavLink to="/register" className="text-yellow-400">Sign Up</NavLink>
-            </>
+            <div className="flex items-center gap-3 pl-3" style={{ borderLeft: "1px solid var(--border)" }}>
+              <NavLink to="/login"    className="text-sm font-medium transition-colors hover:opacity-70" style={{ color: "var(--text-2)" }}>Log In</NavLink>
+              <NavLink to="/register" className="px-4 py-1.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
+                style={{ background: "var(--accent)", color: "#0a0a0f" }}>Sign Up</NavLink>
+            </div>
           )}
         </div>
       </nav>

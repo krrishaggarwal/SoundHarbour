@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { io } from "socket.io-client";
 import { SongContext } from "./SongContext";
 
@@ -6,9 +6,11 @@ export const SocketContext = createContext();
 
 export const SocketContextState = ({ children }) => {
   const { __URL__ } = useContext(SongContext);
-  const socketRef = useRef(null);
+  const socketRef  = useRef(null);
+  // Use a ref for the set so callbacks don't go stale, and a state copy for re-renders
+  const onlineRef  = useRef(new Set());
   const [onlineUsers, setOnlineUsers] = useState(new Set());
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected]     = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -16,43 +18,74 @@ export const SocketContextState = ({ children }) => {
 
     const socket = io(__URL__, {
       auth: { token },
-      transports: ["websocket"],
-      reconnectionAttempts: 5,
+      transports: ["websocket", "polling"],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
     });
-
     socketRef.current = socket;
 
-    socket.on("connect", () => setConnected(true));
-    socket.on("disconnect", () => setConnected(false));
-
-    socket.on("presence", ({ userId, online }) => {
-      setOnlineUsers((prev) => {
-        const next = new Set(prev);
-        online ? next.add(userId) : next.delete(userId);
-        return next;
-      });
+    socket.on("connect", () => {
+      setConnected(true);
+      // Ask server for current online list on (re)connect
+      socket.emit("get_online");
     });
 
-    return () => socket.disconnect();
+    socket.on("disconnect", () => setConnected(false));
+
+    // Single user comes online / goes offline
+    socket.on("presence", ({ userId, online }) => {
+      const next = new Set(onlineRef.current);
+      online ? next.add(String(userId)) : next.delete(String(userId));
+      onlineRef.current = next;
+      setOnlineUsers(new Set(next));
+    });
+
+    // Server sends full list of currently online user IDs on connect
+    socket.on("online_list", (ids) => {
+      const next = new Set(ids.map(String));
+      onlineRef.current = next;
+      setOnlineUsers(new Set(next));
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
   }, [__URL__]);
 
-  const isOnline = (userId) => onlineUsers.has(userId);
+  // Stable callbacks — never recreated, always use latest socket via ref
+  const joinConversation  = useCallback((id) => socketRef.current?.emit("join",  id), []);
+  const leaveConversation = useCallback((id) => socketRef.current?.emit("leave", id), []);
+  const sendMessage       = useCallback((data, cb) => socketRef.current?.emit("message", data, cb), []);
+  const emitTyping        = useCallback((convId) => socketRef.current?.emit("typing",      { conversationId: convId }), []);
+  const emitStopTyping    = useCallback((convId) => socketRef.current?.emit("stop_typing", { conversationId: convId }), []);
 
-  const joinConversation  = (id) => socketRef.current?.emit("join", id);
-  const leaveConversation = (id) => socketRef.current?.emit("leave", id);
+  // isOnline reads from ref (always fresh, no stale closure)
+  const isOnline = useCallback((userId) => onlineRef.current.has(String(userId ?? "")), []);
 
-  const sendMessage = (data, cb) => socketRef.current?.emit("message", data, cb);
-
-  const emitTyping     = (convId) => socketRef.current?.emit("typing",      { conversationId: convId });
-  const emitStopTyping = (convId) => socketRef.current?.emit("stop_typing", { conversationId: convId });
-
-  const onMessage    = (fn) => { socketRef.current?.on("message", fn);      return () => socketRef.current?.off("message", fn); };
-  const onTyping     = (fn) => { socketRef.current?.on("typing", fn);       return () => socketRef.current?.off("typing", fn); };
-  const onStopTyping = (fn) => { socketRef.current?.on("stop_typing", fn);  return () => socketRef.current?.off("stop_typing", fn); };
+  // Event subscriptions — caller is responsible for cleanup
+  const onMessage    = useCallback((fn) => {
+    const s = socketRef.current;
+    if (!s) return () => {};
+    s.on("message", fn);
+    return () => s.off("message", fn);
+  }, []);
+  const onTyping     = useCallback((fn) => {
+    const s = socketRef.current;
+    if (!s) return () => {};
+    s.on("typing", fn);
+    return () => s.off("typing", fn);
+  }, []);
+  const onStopTyping = useCallback((fn) => {
+    const s = socketRef.current;
+    if (!s) return () => {};
+    s.on("stop_typing", fn);
+    return () => s.off("stop_typing", fn);
+  }, []);
 
   return (
     <SocketContext.Provider value={{
-      socket: socketRef.current, connected, isOnline,
+      socket: socketRef, connected, isOnline,
       joinConversation, leaveConversation,
       sendMessage, emitTyping, emitStopTyping,
       onMessage, onTyping, onStopTyping,

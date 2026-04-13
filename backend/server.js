@@ -8,15 +8,14 @@ import { ObjectId } from "mongodb";
 import jwt from "jsonwebtoken";
 import conn from "./config/db.js";
 
-import authRoutes    from "./routes/authRoutes.js";
-import songRoutes    from "./routes/songRoutes.js";
+import authRoutes     from "./routes/authRoutes.js";
+import songRoutes     from "./routes/songRoutes.js";
 import playlistRoutes from "./routes/playlistRoutes.js";
-import userRoutes    from "./routes/userRoutes.js";
-import followRoutes  from "./routes/followRoutes.js";
-import chatRoutes    from "./routes/chatRoutes.js";
+import userRoutes     from "./routes/userRoutes.js";
+import followRoutes   from "./routes/followRoutes.js";
+import chatRoutes     from "./routes/chatRoutes.js";
 
 dotenv.config();
-
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 
 const app = express();
@@ -31,46 +30,55 @@ app.use("/api/v1/user",     userRoutes);
 app.use("/api/v1/follow",   followRoutes);
 app.use("/api/v1/chat",     chatRoutes);
 
-// ── HTTP + Socket.io ─────────────────────────────────────────────────────────
 const httpServer = createServer(app);
-
 const io = new Server(httpServer, {
   cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-// Authenticate socket using JWT in handshake
+// userId (string) → Set<socketId>
+const onlineUsers = new Map();
+
+const getOnlineIds = () => Array.from(onlineUsers.keys());
+
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
   if (!token) return next(new Error("No token"));
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.userId = decoded.id;
+    socket.userId = String(decoded.id);
     next();
   } catch {
     next(new Error("Invalid token"));
   }
 });
 
-// userId → Set<socketId>
-const onlineUsers = new Map();
-
 io.on("connection", (socket) => {
   const uid = socket.userId;
+
+  // Track socket
   if (!onlineUsers.has(uid)) onlineUsers.set(uid, new Set());
   onlineUsers.get(uid).add(socket.id);
-  io.emit("presence", { userId: uid, online: true });
 
-  // ── Join / leave conversation room ───────────────────────────────────────
-  socket.on("join", (convId) => socket.join(convId));
+  // Broadcast presence to everyone else
+  socket.broadcast.emit("presence", { userId: uid, online: true });
+
+  // Send full online list to the newly connected client
+  socket.emit("online_list", getOnlineIds());
+
+  // ── get_online request ────────────────────────────────────────────────────
+  socket.on("get_online", () => {
+    socket.emit("online_list", getOnlineIds());
+  });
+
+  // ── Join / leave rooms ────────────────────────────────────────────────────
+  socket.on("join",  (convId) => socket.join(convId));
   socket.on("leave", (convId) => socket.leave(convId));
 
-  // ── Send message ─────────────────────────────────────────────────────────
-  // type: "text" | "song" | "playlist"
+  // ── Send message ──────────────────────────────────────────────────────────
   socket.on("message", async (data, ack) => {
     try {
       const db = conn.db("music_streaming");
 
-      // Validate participant
       const conv = await db.collection("conversations").findOne({
         _id: new ObjectId(data.conversationId),
         participants: uid,
@@ -80,17 +88,16 @@ io.on("connection", (socket) => {
       const msg = {
         conversationId: data.conversationId,
         senderId: uid,
-        type: data.type || "text",
-        text: data.text || "",
-        song:     data.song     || null, // { title, artist, fileId, songId }
-        playlist: data.playlist || null, // { playlistId, playlistName, songCount }
-        sentAt: new Date(),
-        read: false,
+        type:     data.type || "text",
+        text:     data.text || "",
+        song:     data.song     || null,
+        playlist: data.playlist || null,
+        sentAt:   new Date(),
+        read:     false,
       };
 
       const { insertedId } = await db.collection("messages").insertOne(msg);
 
-      // Summarise for lastMessage
       const preview =
         msg.type === "song"     ? `🎵 ${msg.song?.title}`
       : msg.type === "playlist" ? `🎵 ${msg.playlist?.playlistName}`
@@ -102,18 +109,20 @@ io.on("connection", (socket) => {
       );
 
       const saved = { ...msg, _id: insertedId };
+      // Emit to everyone in room (including sender for consistent state)
       io.to(data.conversationId).emit("message", saved);
       ack?.({ ok: true, _id: insertedId });
     } catch (err) {
-      console.error("socket message:", err);
+      console.error("socket:message", err);
       ack?.({ error: err.message });
     }
   });
 
-  // ── Typing ───────────────────────────────────────────────────────────────
+  // ── Typing ────────────────────────────────────────────────────────────────
   socket.on("typing",      ({ conversationId }) => socket.to(conversationId).emit("typing",      { userId: uid }));
   socket.on("stop_typing", ({ conversationId }) => socket.to(conversationId).emit("stop_typing", { userId: uid }));
 
+  // ── Disconnect ────────────────────────────────────────────────────────────
   socket.on("disconnect", () => {
     const sockets = onlineUsers.get(uid);
     if (sockets) {
@@ -128,7 +137,7 @@ io.on("connection", (socket) => {
 
 export { io };
 
-const PORT = 1337;
+const PORT = process.env.PORT || 1337;
 httpServer.listen(PORT, () =>
-  console.log(`🚀 Server + Socket.io running at http://localhost:${PORT}`)
+  console.log(`🚀 Server + Socket.io on http://localhost:${PORT}`)
 );
