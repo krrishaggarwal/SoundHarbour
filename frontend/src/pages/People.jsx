@@ -25,9 +25,13 @@ const Av = ({ name, size = "md", online }) => {
 // ─── Friend Request Card ──────────────────────────────────────────────────────
 const RequestCard = ({ req, onAccept, onReject }) => (
   <div className="flex items-center gap-3 p-3 bg-gray-800/60 border border-amber-500/20 rounded-2xl">
-    <Av name={req.sender?.fullName} />
+    <Link to={`/user/${req.sender?._id}`} className="flex-shrink-0 hover:opacity-80 transition-opacity">
+      <Av name={req.sender?.fullName} />
+    </Link>
     <div className="flex-1 min-w-0">
-      <p className="font-semibold text-white text-sm truncate">{req.sender?.fullName}</p>
+      <Link to={`/user/${req.sender?._id}`} className="hover:text-amber-400 transition-colors">
+        <p className="font-semibold text-white text-sm truncate">{req.sender?.fullName}</p>
+      </Link>
       <p className="text-gray-500 text-xs">Sent you a friend request</p>
     </div>
     <div className="flex gap-2">
@@ -47,17 +51,21 @@ const UserCard = ({ user, myRelationship, onFollow, onUnfollow, onSendRequest, o
   const isPending = friendRequest?.status === "pending";
   const iSent = friendRequest?.senderId !== user._id?.toString(); // I sent it
 
+  const profilePath = `/user/${user._id}`;
+
   return (
     <div className="flex items-center gap-3 p-4 bg-gray-800/50 border border-gray-700/50 rounded-2xl hover:border-gray-600/70 transition-all">
-      <Av name={user.fullName} online={isOnline(user._id?.toString())} />
+      <Link to={profilePath} className="flex-shrink-0 hover:opacity-80 transition-opacity">
+        <Av name={user.fullName} online={isOnline(user._id?.toString())} />
+      </Link>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="font-semibold text-white text-sm truncate">{user.fullName}</p>
+        <Link to={profilePath} className="group flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <p className="font-semibold text-white text-sm truncate group-hover:text-amber-400 transition-colors">{user.fullName}</p>
           {user.isPublic
             ? <BsGlobe2 size={11} className="text-gray-500 flex-shrink-0" />
             : <BsLockFill size={11} className="text-gray-600 flex-shrink-0" />}
-        </div>
+        </Link>
         <div className="flex items-center gap-2 mt-0.5">
           {isFollowedBy && <span className="text-xs text-gray-500">Follows you</span>}
           {isFriend && <span className="text-xs text-emerald-500">● Friends</span>}
@@ -292,10 +300,14 @@ const People = () => {
                 </button>
               </div>
             ) : friends.map((f) => (
-              <div key={f._id} className="flex items-center gap-3 p-4 bg-gray-800/50 border border-gray-700/50 rounded-2xl">
-                <Av name={f.fullName} online={isOnline(f._id?.toString())} />
+              <div key={f._id} className="flex items-center gap-3 p-4 bg-gray-800/50 border border-gray-700/50 rounded-2xl hover:border-gray-600/70 transition-all">
+                <Link to={`/user/${f._id}`} className="flex-shrink-0 hover:opacity-80 transition-opacity">
+                  <Av name={f.fullName} online={isOnline(f._id?.toString())} />
+                </Link>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white text-sm truncate">{f.fullName}</p>
+                  <Link to={`/user/${f._id}`} className="hover:text-amber-400 transition-colors">
+                    <p className="font-semibold text-white text-sm truncate">{f.fullName}</p>
+                  </Link>
                   <p className={`text-xs ${isOnline(f._id?.toString()) ? "text-emerald-400" : "text-gray-500"}`}>
                     {isOnline(f._id?.toString()) ? "Online" : "Offline"}
                   </p>

@@ -18,25 +18,25 @@ export const login = async (req, res) => {
       return res.status(400).json({ msg: "All fields are required" });
     }
 
-    const db = conn.db("music_streaming");
-    const collection = db.collection("users");
-    const user = await collection.findOne({ email });
+    const db = conn.db("SoundHarbour");
+    const user = await db.collection("users").findOne({ email });
 
     if (!user) {
-      return res.status(400).json({ msg: "User does not exist" });
+      return res.status(400).json({ msg: "No account found with that email" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ msg: "Invalid credentials" });
+      return res.status(400).json({ msg: "Incorrect password" });
     }
 
+    // Store fullName so the Navbar avatar works without extra API call
     return res.status(200).json({
       message: "User logged in",
       status: "success",
-      token: generateToken(user),
-      role: user.role,
-      fullName: user.fullName,   // ← included so navbar can show avatar
+      token:    generateToken(user),
+      role:     user.role,
+      fullName: user.fullName,
     });
   } catch (err) {
     console.error(err);
@@ -52,29 +52,25 @@ export const register = async (req, res) => {
       return res.status(400).json({ msg: "All fields are required" });
     }
 
-    const db = conn.db("music_streaming");
-    const collection = db.collection("users");
-
-    const userExists = await collection.findOne({ email });
+    const db = conn.db("SoundHarbourg");
+    const userExists = await db.collection("users").findOne({ email });
     if (userExists) {
-      return res.status(400).json({ msg: "User already exists" });
+      return res.status(400).json({ msg: "An account with that email already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await collection.insertOne({
+    await db.collection("users").insertOne({
       fullName,
       email,
       password: hashedPassword,
       role: "user",
       playlists: [],
+      isPublic: false,
       createdAt: new Date(),
     });
 
-    return res.status(201).json({
-      message: "User registered successfully",
-      status: "success",
-    });
+    return res.status(201).json({ message: "Account created successfully", status: "success" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });

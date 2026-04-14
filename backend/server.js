@@ -77,7 +77,7 @@ io.on("connection", (socket) => {
   // ── Send message ──────────────────────────────────────────────────────────
   socket.on("message", async (data, ack) => {
     try {
-      const db = conn.db("music_streaming");
+      const db = conn.db("SoundHarbour");
 
       const conv = await db.collection("conversations").findOne({
         _id: new ObjectId(data.conversationId),

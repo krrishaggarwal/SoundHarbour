@@ -1,121 +1,109 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { SongContext } from "../Context/SongContext";
+import { FiUser, FiMail, FiLock, FiUserPlus } from "react-icons/fi";
+
+// Login/Register are rendered OUTSIDE the Layout context tree,
+// so we cannot use useContext(SongContext) here.
+const API = import.meta.env.VITE_API_URL || "http://localhost:1337";
 
 const Register = () => {
   const navigate = useNavigate();
-  const __URL__ = "http://localhost:1337";
 
-  const [inputs, setInputs] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-  });
-
-  const [err, setErr] = useState(null);
+  const [inputs,  setInputs]  = useState({ fullName: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState("");
 
-  const handleChange = (e) => {
-    setInputs((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
+  const handleChange = (e) =>
+    setInputs((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setError("");
     try {
       setLoading(true);
-      setErr(null);
-
-      const res = await fetch(`${__URL__}/api/v1/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(inputs),
+      const res  = await fetch(`${API}/api/v1/auth/register`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(inputs),
       });
-
       const data = await res.json();
 
       if (res.ok) {
-        alert("Registration successful");
         navigate("/login");
       } else {
-        setErr(data.msg || "Registration failed");
+        setError(data.msg || "Registration failed.");
       }
-
-    } catch (error) {
-      console.error(error);
-      setErr("Something went wrong");
+    } catch {
+      setError("Cannot connect to the server.");
     } finally {
       setLoading(false);
     }
   };
 
+  const fields = [
+    { name: "fullName", type: "text",     label: "Full Name", placeholder: "Your name",       Icon: FiUser },
+    { name: "email",    type: "email",    label: "Email",     placeholder: "you@example.com", Icon: FiMail },
+    { name: "password", type: "password", label: "Password",  placeholder: "••••••••",        Icon: FiLock },
+  ];
+
   return (
-    <div className="w-full h-screen flex justify-center items-center bg-purple-900">
+    <div className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: "var(--bg-base)" }}>
+      <div className="w-full max-w-sm">
 
-      <form
-        className="bg-white flex flex-col px-6 py-10 shadow-2xl rounded-xl w-[300px]"
-        onSubmit={handleSubmit}
-      >
-        <h1 className="text-center text-purple-800 text-2xl mb-4 font-semibold">
-          Register
-        </h1>
-
-        <div className="flex flex-col space-y-4">
-
-          <input
-            type="text"
-            placeholder="Full Name"
-            name="fullName"
-            value={inputs.fullName}
-            onChange={handleChange}
-            className="border p-2 rounded outline-none"
-            required
-          />
-
-          <input
-            type="email"
-            placeholder="Email"
-            name="email"
-            value={inputs.email}
-            onChange={handleChange}
-            className="border p-2 rounded outline-none"
-            required
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            name="password"
-            value={inputs.password}
-            onChange={handleChange}
-            className="border p-2 rounded outline-none"
-            required
-          />
-
-          {err && <p className="text-red-500 text-sm">{err}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-purple-800 text-white py-2 rounded hover:bg-purple-900 transition"
-          >
-            {loading ? "Registering..." : "Register"}
-          </button>
-
-          <div className="text-sm text-center">
-            Already have an account?{" "}
-            <Link to="/login" className="text-purple-700">
-              Login
-            </Link>
-          </div>
-
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-black tracking-tight" style={{ color: "var(--text-1)" }}>
+            SoundHarbour
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-3)" }}>
+            Create your account
+          </p>
         </div>
-      </form>
+
+        <form onSubmit={handleSubmit} className="space-y-4"
+          style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "28px" }}>
+
+          {error && (
+            <div className="px-4 py-3 rounded-xl text-sm font-medium"
+              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#f87171" }}>
+              {error}
+            </div>
+          )}
+
+          {fields.map(({ name, type, label, placeholder, Icon }) => (
+            <div key={name}>
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider"
+                style={{ color: "var(--text-3)" }}>{label}</label>
+              <div className="relative">
+                <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2"
+                  style={{ color: "var(--text-3)" }} />
+                <input
+                  type={type} name={name} required
+                  value={inputs[name]} onChange={handleChange}
+                  placeholder={placeholder}
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none"
+                  style={{ background: "var(--bg-raised)", color: "var(--text-1)", border: "1px solid var(--border)" }}
+                  onFocus={(e) => e.target.style.borderColor = "rgba(245,158,11,0.5)"}
+                  onBlur={(e)  => e.target.style.borderColor = "var(--border)"}
+                />
+              </div>
+            </div>
+          ))}
+
+          <button type="submit" disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm mt-2 transition-opacity hover:opacity-80 disabled:opacity-50"
+            style={{ background: "var(--accent)", color: "#0a0a0f" }}>
+            <FiUserPlus size={15} />
+            {loading ? "Creating account…" : "Create Account"}
+          </button>
+        </form>
+
+        <p className="text-center text-sm mt-5" style={{ color: "var(--text-3)" }}>
+          Already have an account?{" "}
+          <Link to="/login" className="font-semibold hover:underline"
+            style={{ color: "var(--accent)" }}>Sign in</Link>
+        </p>
+      </div>
     </div>
   );
 };

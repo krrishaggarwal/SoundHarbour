@@ -82,7 +82,7 @@ const Navbar = () => {
 
         {/* Logo */}
         <NavLink to="/" className="text-lg font-black tracking-tight" style={{ color: "var(--text-1)" }}>
-          Musically
+          SoundHarbour
         </NavLink>
 
         {/* Mobile hamburger */}

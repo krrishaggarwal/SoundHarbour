@@ -4,7 +4,7 @@ import conn from "../config/db.js";
 // GET /api/v1/user/profile  (own profile, auth required)
 export const getProfile = async (req, res) => {
   try {
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
 
     const user = await db.collection("users").findOne(
       { _id: new mongodb.ObjectId(req.userId) },
@@ -44,7 +44,7 @@ export const updatePrivacy = async (req, res) => {
       return res.status(400).json({ msg: "isPublic must be a boolean" });
     }
 
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
 
     await db.collection("users").updateOne(
       { _id: new mongodb.ObjectId(req.userId) },
@@ -68,7 +68,7 @@ export const getPublicProfile = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
 
     const user = await db.collection("users").findOne(
       { _id: new mongodb.ObjectId(userId) },
@@ -140,7 +140,7 @@ export const trackPlay = async (req, res) => {
       return res.status(400).json({ msg: "Song info required" });
     }
 
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
 
     await db.collection("playHistory").insertOne({
       userId: req.userId,
@@ -161,7 +161,7 @@ export const trackPlay = async (req, res) => {
 // GET /api/v1/user/top-songs
 export const getTopSongs = async (req, res) => {
   try {
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
 
     const topSongs = await db
       .collection("playHistory")
@@ -191,7 +191,7 @@ export const getTopSongs = async (req, res) => {
 // GET /api/v1/user/recent
 export const getRecentPlays = async (req, res) => {
   try {
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
 
     const recent = await db
       .collection("playHistory")
@@ -210,7 +210,7 @@ export const getRecentPlays = async (req, res) => {
 // GET /api/v1/user/playlists-summary
 export const getPlaylistsSummary = async (req, res) => {
   try {
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
 
     const playlists = await db
       .collection("playlists")

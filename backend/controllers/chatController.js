@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import conn from "../config/db.js";
 
-const db = () => conn.db("music_streaming");
+const db = () => conn.db("SoundHarbour");
 
 // GET /api/v1/chat/conversations
 export const getConversations = async (req, res) => {
@@ -28,7 +28,7 @@ export const getConversations = async (req, res) => {
   } catch (err) { return res.status(500).json({ error: err.message }); }
 };
 
-// GET /api/v1/chat/with/:userId — get or create conversation
+// GET /api/v1/chat/with/:userId — get or create conversation (must be friends)
 export const getOrCreate = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -62,7 +62,6 @@ export const getOrCreate = async (req, res) => {
 export const getMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const before = req.query.before; // for pagination
 
     const convo = await db().collection("conversations").findOne({
       _id: new ObjectId(conversationId), participants: req.userId,
@@ -70,17 +69,64 @@ export const getMessages = async (req, res) => {
     if (!convo) return res.status(403).json({ msg: "Unauthorized" });
 
     const query = { conversationId };
-    if (before) query.sentAt = { $lt: new Date(before) };
+    if (req.query.before) query.sentAt = { $lt: new Date(req.query.before) };
 
     const messages = await db().collection("messages")
       .find(query).sort({ sentAt: -1 }).limit(50).toArray();
 
-    // mark as read
     await db().collection("messages").updateMany(
       { conversationId, senderId: { $ne: req.userId }, read: false },
       { $set: { read: true } }
     );
 
     return res.status(200).json({ messages: messages.reverse() });
+  } catch (err) { return res.status(500).json({ error: err.message }); }
+};
+
+// POST /api/v1/chat/send — REST fallback for sending messages
+// Used by ShareModal when socket is not connected yet.
+// The server-side socket broadcast is handled here via the imported `io`.
+export const sendMessageRest = async (req, res) => {
+  try {
+    const { conversationId, type, text, song, playlist } = req.body;
+    const me = req.userId;
+
+    const convo = await db().collection("conversations").findOne({
+      _id: new ObjectId(conversationId), participants: me,
+    });
+    if (!convo) return res.status(403).json({ msg: "Unauthorized" });
+
+    const msg = {
+      conversationId,
+      senderId: me,
+      type:     type || "text",
+      text:     text || "",
+      song:     song     || null,
+      playlist: playlist || null,
+      sentAt:   new Date(),
+      read:     false,
+    };
+
+    const { insertedId } = await db().collection("messages").insertOne(msg);
+
+    const preview =
+      msg.type === "song"     ? `🎵 ${msg.song?.title}`
+    : msg.type === "playlist" ? `🎵 ${msg.playlist?.playlistName}`
+    : msg.text.slice(0, 60);
+
+    await db().collection("conversations").updateOne(
+      { _id: new ObjectId(conversationId) },
+      { $set: { lastMessage: { preview, senderId: me, sentAt: new Date() }, updatedAt: new Date() } }
+    );
+
+    // Emit via socket if available (imported from server.js)
+    try {
+      const { io } = await import("../server.js");
+      io.to(conversationId).emit("message", { ...msg, _id: insertedId });
+    } catch {
+      // Socket not available — message is saved to DB, recipient will see it on next load
+    }
+
+    return res.status(201).json({ message: { ...msg, _id: insertedId } });
   } catch (err) { return res.status(500).json({ error: err.message }); }
 };

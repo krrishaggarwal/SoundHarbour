@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import conn from "../config/db.js";
 
-const db = () => conn.db("music_streaming");
+const db = () => conn.db("SoundHarbour");
 
 // ── Follow / Unfollow ────────────────────────────────────────────────────────
 

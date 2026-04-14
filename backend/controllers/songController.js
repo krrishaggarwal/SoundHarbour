@@ -14,7 +14,7 @@ export const addSong = async (req, res) => {
       return res.status(400).json({ msg: "Audio file is required" });
     }
 
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
     const collection = db.collection("songs");
 
     const bucket = new mongodb.GridFSBucket(db, {
@@ -69,7 +69,7 @@ export const deleteSong = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
     const collection = db.collection("songs");
     const bucket = new mongodb.GridFSBucket(db, {
       bucketName: "uploads",
@@ -104,7 +104,7 @@ export const deleteSong = async (req, res) => {
 
 export const getSongs = async (req, res) => {
   try {
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
     const collection = db.collection("songs");
 
     const songs = await collection.find({}).toArray();
@@ -126,7 +126,7 @@ export const streamSong = async (req, res) => {
       return res.status(400).json({ msg: "Filename required" });
     }
 
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
     const bucket = new mongodb.GridFSBucket(db, { bucketName: "uploads" });
 
     const files = await db.collection("uploads.files").find({ filename }).toArray();
@@ -159,7 +159,7 @@ export const searchSongs = async (req, res) => {
       return res.status(400).json({ msg: "Search query required" });
     }
 
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
     const collection = db.collection("songs");
 
     const songs = await collection.find({
@@ -183,7 +183,7 @@ export const updateSong = async (req, res) => {
     const { id } = req.params;
     const { title, artist, album, genre, description } = req.body;
 
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
     const collection = db.collection("songs");
 
     const song = await collection.findOne({
@@ -228,7 +228,7 @@ export const streamSongById = async (req, res) => {
       return res.status(400).json({ msg: "File ID required" });
     }
 
-    const db = conn.db("music_streaming");
+    const db = conn.db("SoundHarbour");
     const bucket = new mongodb.GridFSBucket(db, { bucketName: "uploads" });
 
     const objectId = new mongodb.ObjectId(id);

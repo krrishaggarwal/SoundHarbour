@@ -245,7 +245,7 @@ const PublicProfile = () => {
           <div className="flex items-center justify-between bg-gray-900/50 border border-gray-800/60 rounded-2xl px-6 py-4">
             <p className="text-gray-400 text-sm">Want your own music profile?</p>
             <Link to="/register" className="bg-amber-400 text-gray-950 font-bold text-sm px-5 py-2 rounded-full hover:bg-amber-300 transition-colors">
-              Join Musically
+              Join SoundHarbour
             </Link>
           </div>
         </div>
