@@ -52,7 +52,7 @@ export const register = async (req, res) => {
       return res.status(400).json({ msg: "All fields are required" });
     }
 
-    const db = conn.db("SoundHarbourg");
+    const db = conn.db("SoundHarbour");
     const userExists = await db.collection("users").findOne({ email });
     if (userExists) {
       return res.status(400).json({ msg: "An account with that email already exists" });
