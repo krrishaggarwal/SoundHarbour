@@ -5,7 +5,7 @@ import conn from "../config/db.js";
 
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user._id, role: user.role },
+    { id: user._id.toString(), role: user.role },  // ← add .toString()
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );

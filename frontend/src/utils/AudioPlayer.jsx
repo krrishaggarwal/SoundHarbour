@@ -27,21 +27,21 @@ const AudioPlayer = () => {
   } = useContext(SongContext);
   const { queue, dispatchQueue } = useContext(QueueContext);
 
-  const [duration,    setDuration]    = useState(0);
+  const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [volume,      setVolume]      = useState(1);
-  const [muted,       setMuted]       = useState(false);
-  const [showQueue,   setShowQueue]   = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
 
   // ── Seeking state — prevents timeupdate from fighting the drag ──────────
-  const isSeeking    = useRef(false);
-  const seekValue    = useRef(0);
+  const isSeeking = useRef(false);
+  const seekValue = useRef(0);
 
   // ── Wire up audio events ─────────────────────────────────────────────────
   useEffect(() => {
     if (!audio) return;
 
-    const onLoaded     = () => setDuration(audio.duration || 0);
+    const onLoaded = () => setDuration(audio.duration || 0);
     const onTimeUpdate = () => {
       if (!isSeeking.current) setCurrentTime(audio.currentTime || 0);
     };
@@ -51,14 +51,14 @@ const AudioPlayer = () => {
     };
 
     audio.addEventListener("loadedmetadata", onLoaded);
-    audio.addEventListener("timeupdate",     onTimeUpdate);
-    audio.addEventListener("ended",          onEnded);
+    audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("ended", onEnded);
     audio.volume = volume;
 
     return () => {
       audio.removeEventListener("loadedmetadata", onLoaded);
-      audio.removeEventListener("timeupdate",     onTimeUpdate);
-      audio.removeEventListener("ended",          onEnded);
+      audio.removeEventListener("timeupdate", onTimeUpdate);
+      audio.removeEventListener("ended", onEnded);
     };
   }, [audio, queue]);
 
@@ -73,16 +73,25 @@ const AudioPlayer = () => {
     setSongUrl(next.fileId);
     setIsPlaying(true);
     dispatchQueue({ type: "REMOVE_FROM_QUEUE", payload: next.fileId });
+
+    // ✅ Track the play
+    const token = localStorage.getItem("token");
+    if (token) {
+      axios.post(`${__URL__}/api/v1/user/play`,
+        { title: next.title, artist: next.artistName || next.artist || "", fileId: next.fileId },
+        { headers: { "x-auth-token": token } }
+      ).catch(console.error);
+    }
   };
 
   const togglePlay = () => {
     if (!songUrl) return;
     if (audio.paused) { audio.play(); setIsPlaying(true); }
-    else              { audio.pause(); setIsPlaying(false); }
+    else { audio.pause(); setIsPlaying(false); }
   };
 
-  const playPrev  = () => { if (audio) audio.currentTime = 0; };
-  const playNext  = () => playNextFromQueue();
+  const playPrev = () => { if (audio) audio.currentTime = 0; };
+  const playNext = () => playNextFromQueue();
 
   // ── Seek handlers — key fix: commit only on mouse/touch up ──────────────
   const onSeekStart = () => {

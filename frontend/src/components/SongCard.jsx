@@ -14,7 +14,7 @@ const SongCard = ({ title, artistName, fileId, songId }) => {
   const navigate = useNavigate();
 
   const [showOptions, setShowOptions] = useState(false);
-  const [showShare,   setShowShare]   = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const handlePlay = () => {
     try {
@@ -27,6 +27,15 @@ const SongCard = ({ title, artistName, fileId, songId }) => {
       audio.load();
       audio.play();
       setIsPlaying(true);
+
+      // ✅ Track the play
+      const token = localStorage.getItem("token");
+      if (token) {
+        axios.post(`${__URL__}/api/v1/user/play`,
+          { songId, title, artist: artistName, fileId },
+          { headers: { "x-auth-token": token } }
+        ).catch(console.error);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -84,7 +93,7 @@ const SongCard = ({ title, artistName, fileId, songId }) => {
               style={{ background: "var(--bg-raised)", border: "1px solid var(--border-md)" }}>
               {[
                 { label: "Add to playlist", fn: handleAddToPlaylist },
-                { label: "Play next",       fn: handlePlayNext },
+                { label: "Play next", fn: handlePlayNext },
                 { label: "Share with friend", fn: () => { setShowShare(true); setShowOptions(false); }, accent: true },
               ].map(({ label, fn, accent }) => (
                 <button key={label} onClick={fn}

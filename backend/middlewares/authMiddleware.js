@@ -10,7 +10,7 @@ export const userJwtMiddleware = (req, res, next) => {
         if (!decoded || !decoded.id) {
             return res.status(401).json({ msg: "Invalid token payload" });
         }
-        req.userId = decoded.id;
+        req.userId = decoded.id.toString();  // ← add .toString()
         req.role = decoded.role;
         next();
     } catch (err) {
