@@ -1,9 +1,9 @@
+//chatController.js
 import { ObjectId } from "mongodb";
 import conn from "../config/db.js";
 
 const db = () => conn.db("SoundHarbour");
 
-// GET /api/v1/chat/conversations
 export const getConversations = async (req, res) => {
   try {
     const convos = await db().collection("conversations")
@@ -28,7 +28,6 @@ export const getConversations = async (req, res) => {
   } catch (err) { return res.status(500).json({ error: err.message }); }
 };
 
-// GET /api/v1/chat/with/:userId — get or create conversation (must be friends)
 export const getOrCreate = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -58,7 +57,6 @@ export const getOrCreate = async (req, res) => {
   } catch (err) { return res.status(500).json({ error: err.message }); }
 };
 
-// GET /api/v1/chat/messages/:conversationId
 export const getMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -83,9 +81,6 @@ export const getMessages = async (req, res) => {
   } catch (err) { return res.status(500).json({ error: err.message }); }
 };
 
-// POST /api/v1/chat/send — REST fallback for sending messages
-// Used by ShareModal when socket is not connected yet.
-// The server-side socket broadcast is handled here via the imported `io`.
 export const sendMessageRest = async (req, res) => {
   try {
     const { conversationId, type, text, song, playlist } = req.body;
@@ -119,13 +114,10 @@ export const sendMessageRest = async (req, res) => {
       { $set: { lastMessage: { preview, senderId: me, sentAt: new Date() }, updatedAt: new Date() } }
     );
 
-    // Emit via socket if available (imported from server.js)
     try {
       const { io } = await import("../server.js");
       io.to(conversationId).emit("message", { ...msg, _id: insertedId });
-    } catch {
-      // Socket not available — message is saved to DB, recipient will see it on next load
-    }
+    } catch {}
 
     return res.status(201).json({ message: { ...msg, _id: insertedId } });
   } catch (err) { return res.status(500).json({ error: err.message }); }

@@ -19,7 +19,6 @@ const AdminSongCard = ({ song, onUpdate }) => {
     description: song.description || "",
   });
 
-  // Delete handler
   const deleteSong = async () => {
     if (!window.confirm("Delete this song permanently?")) return;
     try {

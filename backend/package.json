@@ -9,7 +9,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "author": "Manish Kumar",
+  "author": "Krrish Aggarwal",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",

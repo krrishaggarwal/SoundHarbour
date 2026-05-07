@@ -1,13 +1,9 @@
 import React, { useEffect, useContext, useState } from "react";
 import axios from "axios";
 import PlaylistCard from "../components/PlaylistCard";
-
-// Context
 import { SidebarContext } from "../Context/SibebarContext";
 import { FetchContext } from "../Context/FetchContext";
 import { SongContext } from "../Context/SongContext";
-
-// Icons
 import { GrFormAdd } from "react-icons/gr";
 
 const CreatePlaylist = () => {
@@ -26,7 +22,6 @@ const CreatePlaylist = () => {
     "x-auth-token": token,
   };
 
-  // ➕ Create playlist
   const createPlaylist = async () => {
     try {
       if (!token) return alert("Please login");
@@ -53,7 +48,6 @@ const CreatePlaylist = () => {
     }
   };
 
-  // 📥 Fetch playlists
   const fetchPlaylists = async () => {
     try {
       setLoading(true);
@@ -82,7 +76,6 @@ const CreatePlaylist = () => {
 
       <h1 className="text-2xl font-semibold">All Playlists</h1>
 
-      {/* 🎵 Playlist List */}
       {loading ? (
         <p>Loading...</p>
       ) : playlists.length > 0 ? (
@@ -98,7 +91,6 @@ const CreatePlaylist = () => {
         <p className="text-center text-lg">No Playlists Found</p>
       )}
 
-      {/* ➕ Floating Button */}
       <div
         onClick={() => setShowCreate(true)}
         className="bg-yellow-400 fixed bottom-20 right-5 px-3 py-2 rounded-lg flex items-center space-x-1 cursor-pointer text-black"
@@ -107,7 +99,6 @@ const CreatePlaylist = () => {
         <span>Create</span>
       </div>
 
-      {/* 🧾 Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
 

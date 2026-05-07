@@ -8,7 +8,6 @@ import { MdOutlineLibraryMusic } from "react-icons/md";
 import musicbg from "../assets/musicbg.jpg";
 import playlistImg from "../assets/playlist.jpg";
 
-// Coloured initials avatar
 const Av = ({ name }) => {
   const initials = name
     ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -28,15 +27,6 @@ const Av = ({ name }) => {
   );
 };
 
-/**
- * ShareModal
- *
- * Props:
- *   type        "song" | "playlist"
- *   payload     { title, artist, fileId, songId }  — for song
- *               { playlistId, playlistName, songCount } — for playlist
- *   onClose     () => void
- */
 const ShareModal = ({ type, payload, onClose }) => {
   const { __URL__ } = useContext(SongContext);
   const { sendMessage } = useContext(SocketContext);
@@ -69,7 +59,6 @@ const ShareModal = ({ type, payload, onClose }) => {
     if (selected.size === 0) return;
     setSending(true);
     try {
-      // For each selected friend: get/create conversation, then send via socket
       await Promise.all([...selected].map(async (friendId) => {
         const { data } = await axios.get(
           `${__URL__}/api/v1/chat/with/${friendId}`,
@@ -85,11 +74,9 @@ const ShareModal = ({ type, payload, onClose }) => {
             : { playlist: payload }),
         };
 
-        // Try socket first; fall back to REST if socket not connected
         await new Promise((resolve) => {
           sendMessage(msgPayload, (ack) => {
             if (!ack || ack.error) {
-              // Socket failed — use REST fallback
               axios.post(`${__URL__}/api/v1/chat/send`, msgPayload, { headers })
                 .catch(console.error)
                 .finally(resolve);
@@ -97,7 +84,6 @@ const ShareModal = ({ type, payload, onClose }) => {
               resolve();
             }
           });
-          // Resolve after 1.5s even if no ack (socket may not be connected yet)
           setTimeout(resolve, 1500);
         });
       }));
@@ -116,7 +102,6 @@ const ShareModal = ({ type, payload, onClose }) => {
     ? friends.filter((f) => f.fullName.toLowerCase().includes(query.toLowerCase()))
     : friends;
 
-  // Preview card shown at the top of the modal
   const Preview = () =>
     type === "song" ? (
       <div className="flex items-center gap-3 p-3 rounded-xl mb-1"
@@ -150,7 +135,6 @@ const ShareModal = ({ type, payload, onClose }) => {
       <div className="w-full max-w-sm rounded-2xl flex flex-col overflow-hidden"
         style={{ background: "var(--bg-raised)", border: "1px solid var(--border-md)", maxHeight: "85vh" }}>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
           style={{ borderBottom: "1px solid var(--border)" }}>
           <h3 className="font-bold text-sm" style={{ color: "var(--text-1)" }}>
@@ -162,12 +146,10 @@ const ShareModal = ({ type, payload, onClose }) => {
           </button>
         </div>
 
-        {/* What's being shared */}
         <div className="px-4 pt-3 flex-shrink-0">
           <Preview />
         </div>
 
-        {/* Search */}
         <div className="px-4 py-2 flex-shrink-0">
           <div className="relative">
             <FiSearch size={13} className="absolute left-3 top-1/2 -translate-y-1/2"
@@ -182,7 +164,6 @@ const ShareModal = ({ type, payload, onClose }) => {
           </div>
         </div>
 
-        {/* Friends list */}
         <div className="flex-1 overflow-y-auto px-4 pb-2 space-y-0.5">
           {loading ? (
             <div className="flex justify-center py-8">
@@ -217,7 +198,6 @@ const ShareModal = ({ type, payload, onClose }) => {
                 <span className="flex-1 text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>
                   {f.fullName}
                 </span>
-                {/* Checkmark */}
                 <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
                   style={{
                     background: isSelected ? "var(--accent)" : "transparent",
@@ -230,7 +210,6 @@ const ShareModal = ({ type, payload, onClose }) => {
           })}
         </div>
 
-        {/* Footer */}
         <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           {done ? (
             <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"

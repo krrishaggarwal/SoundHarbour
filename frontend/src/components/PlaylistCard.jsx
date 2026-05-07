@@ -51,7 +51,6 @@ const PlaylistCard = ({ playlistName, playlistId, noSongs }) => {
       <div className="flex items-center justify-between py-3 px-1 border-b transition-colors"
         style={{ borderColor: "var(--border)", color: "var(--text-1)" }}>
 
-        {/* Playlist info */}
         <Link to={`/playlist/${playlistId}`} className="flex items-center gap-4 flex-1 min-w-0 group">
           <img src={playlist} alt="playlist"
             className="w-14 h-14 rounded-xl object-cover flex-shrink-0 group-hover:opacity-80 transition-opacity" />
@@ -66,16 +65,13 @@ const PlaylistCard = ({ playlistName, playlistId, noSongs }) => {
           </div>
         </Link>
 
-        {/* Actions */}
         <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-          {/* Add song to playlist */}
           <button onClick={addSongToPlaylist} disabled={loading} title="Add selected song"
             className="p-2 rounded-lg hover:opacity-70 transition-opacity disabled:opacity-30"
             style={{ color: "var(--text-2)" }}>
             <CgPlayListAdd size={24} />
           </button>
 
-          {/* Share playlist */}
           <button
             onClick={() => setShowShare(true)}
             title="Share playlist with friend"

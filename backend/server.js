@@ -1,3 +1,4 @@
+//server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -35,7 +36,6 @@ const io = new Server(httpServer, {
   cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-// userId (string) → Set<socketId>
 const onlineUsers = new Map();
 
 const getOnlineIds = () => Array.from(onlineUsers.keys());
@@ -54,27 +54,16 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
   const uid = socket.userId;
-
-  // Track socket
   if (!onlineUsers.has(uid)) onlineUsers.set(uid, new Set());
   onlineUsers.get(uid).add(socket.id);
-
-  // Broadcast presence to everyone else
   socket.broadcast.emit("presence", { userId: uid, online: true });
-
-  // Send full online list to the newly connected client
   socket.emit("online_list", getOnlineIds());
-
-  // ── get_online request ────────────────────────────────────────────────────
   socket.on("get_online", () => {
     socket.emit("online_list", getOnlineIds());
   });
 
-  // ── Join / leave rooms ────────────────────────────────────────────────────
   socket.on("join",  (convId) => socket.join(convId));
   socket.on("leave", (convId) => socket.leave(convId));
-
-  // ── Send message ──────────────────────────────────────────────────────────
   socket.on("message", async (data, ack) => {
     try {
       const db = conn.db("SoundHarbour");
@@ -95,9 +84,7 @@ io.on("connection", (socket) => {
         sentAt:   new Date(),
         read:     false,
       };
-
       const { insertedId } = await db.collection("messages").insertOne(msg);
-
       const preview =
         msg.type === "song"     ? `🎵 ${msg.song?.title}`
       : msg.type === "playlist" ? `🎵 ${msg.playlist?.playlistName}`
@@ -109,7 +96,6 @@ io.on("connection", (socket) => {
       );
 
       const saved = { ...msg, _id: insertedId };
-      // Emit to everyone in room (including sender for consistent state)
       io.to(data.conversationId).emit("message", saved);
       ack?.({ ok: true, _id: insertedId });
     } catch (err) {
@@ -118,11 +104,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  // ── Typing ────────────────────────────────────────────────────────────────
   socket.on("typing",      ({ conversationId }) => socket.to(conversationId).emit("typing",      { userId: uid }));
   socket.on("stop_typing", ({ conversationId }) => socket.to(conversationId).emit("stop_typing", { userId: uid }));
 
-  // ── Disconnect ────────────────────────────────────────────────────────────
   socket.on("disconnect", () => {
     const sockets = onlineUsers.get(uid);
     if (sockets) {

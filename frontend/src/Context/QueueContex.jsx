@@ -1,5 +1,4 @@
 import { createContext, useReducer } from "react";
-
 export const QueueContext = createContext();
 
 const queueReducer = (state, action) => {

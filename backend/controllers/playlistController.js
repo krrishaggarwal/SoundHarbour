@@ -1,3 +1,4 @@
+//playlistController.js
 import mongodb from "mongodb";
 import conn from "../config/db.js";
 
@@ -23,7 +24,7 @@ export const deletePlaylist = async (req, res) => {
   try {
     const result = await conn.db("SoundHarbour").collection("playlists").deleteOne({
       _id: new mongodb.ObjectId(req.params.id),
-      createdBy: req.userId, // only owner can delete
+      createdBy: req.userId,
     });
 
     if (result.deletedCount === 0)
@@ -85,14 +86,10 @@ export const getPlaylists = async (req, res) => {
   }
 };
 
-// ─── FIX: any authenticated user can view a playlist by ID ───────────────────
-// This allows playlists shared via chat to be opened by the recipient.
-// Write/delete operations above still restrict to the owner only.
 export const getPlaylist = async (req, res) => {
   try {
     const playlist = await conn.db("SoundHarbour").collection("playlists").findOne({
       _id: new mongodb.ObjectId(req.params.id),
-      // Removed "createdBy: req.userId" — any logged-in user can view
     });
 
     if (!playlist) return res.status(404).json({ msg: "Playlist not found" });

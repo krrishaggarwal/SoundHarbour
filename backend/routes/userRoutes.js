@@ -1,3 +1,4 @@
+//userRoutes.js
 import express from "express";
 import {
   getProfile,
@@ -12,12 +13,8 @@ import { userJwtMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-// ── Public (no auth needed) ──────────────────────────────────────────────────
 router.get("/public/:userId", getPublicProfile);
-
-// ── Authenticated ────────────────────────────────────────────────────────────
 router.use(userJwtMiddleware);
-
 router.get("/profile", getProfile);
 router.put("/privacy", updatePrivacy);
 router.post("/play", trackPlay);

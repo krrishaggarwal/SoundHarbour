@@ -1,7 +1,7 @@
+//userController.js
 import mongodb from "mongodb";
 import conn from "../config/db.js";
 
-// GET /api/v1/user/profile  (own profile, auth required)
 export const getProfile = async (req, res) => {
   try {
     const db = conn.db("SoundHarbour");
@@ -24,7 +24,7 @@ export const getProfile = async (req, res) => {
     return res.status(200).json({
       user: {
         ...user,
-        isPublic: user.isPublic ?? false,   // default private
+        isPublic: user.isPublic ?? false,
         playlistCount,
         totalPlays,
       },
@@ -35,7 +35,6 @@ export const getProfile = async (req, res) => {
   }
 };
 
-// PUT /api/v1/user/privacy  — toggle public/private
 export const updatePrivacy = async (req, res) => {
   try {
     const { isPublic } = req.body;
@@ -63,7 +62,6 @@ export const updatePrivacy = async (req, res) => {
   }
 };
 
-// GET /api/v1/user/public/:userId  — anyone can view a public profile
 export const getPublicProfile = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -72,16 +70,13 @@ export const getPublicProfile = async (req, res) => {
 
     const user = await db.collection("users").findOne(
       { _id: new mongodb.ObjectId(userId) },
-      { projection: { password: 0, email: 0 } }   // never expose email
+      { projection: { password: 0, email: 0 } }
     );
-
     if (!user) return res.status(404).json({ msg: "User not found" });
-
     if (!user.isPublic) {
       return res.status(403).json({ msg: "This profile is private" });
     }
 
-    // Build public data
     const playlistCount = await db
       .collection("playlists")
       .countDocuments({ createdBy: userId });
@@ -131,7 +126,6 @@ export const getPublicProfile = async (req, res) => {
   }
 };
 
-// POST /api/v1/user/play
 export const trackPlay = async (req, res) => {
   try {
     const { songId, title, artist, fileId } = req.body;
@@ -158,7 +152,6 @@ export const trackPlay = async (req, res) => {
   }
 };
 
-// GET /api/v1/user/top-songs
 export const getTopSongs = async (req, res) => {
   try {
     const db = conn.db("SoundHarbour");
@@ -188,7 +181,6 @@ export const getTopSongs = async (req, res) => {
   }
 };
 
-// GET /api/v1/user/recent
 export const getRecentPlays = async (req, res) => {
   try {
     const db = conn.db("SoundHarbour");
@@ -207,7 +199,6 @@ export const getRecentPlays = async (req, res) => {
   }
 };
 
-// GET /api/v1/user/playlists-summary
 export const getPlaylistsSummary = async (req, res) => {
   try {
     const db = conn.db("SoundHarbour");

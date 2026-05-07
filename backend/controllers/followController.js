@@ -1,9 +1,8 @@
+//followController.js
 import { ObjectId } from "mongodb";
 import conn from "../config/db.js";
 
 const db = () => conn.db("SoundHarbour");
-
-// ── Follow / Unfollow ────────────────────────────────────────────────────────
 
 export const followUser = async (req, res) => {
   try {
@@ -25,8 +24,6 @@ export const unfollowUser = async (req, res) => {
     return res.status(200).json({ message: "Unfollowed" });
   } catch (err) { return res.status(500).json({ error: err.message }); }
 };
-
-// ── Friend requests ──────────────────────────────────────────────────────────
 
 export const sendFriendRequest = async (req, res) => {
   try {
@@ -52,7 +49,7 @@ export const sendFriendRequest = async (req, res) => {
 export const respondFriendRequest = async (req, res) => {
   try {
     const { requestId } = req.params;
-    const { action } = req.body; // "accept" | "reject"
+    const { action } = req.body;
     const me = req.userId;
 
     const req_ = await db().collection("friendRequests").findOne({
@@ -102,8 +99,6 @@ export const removeFriend = async (req, res) => {
     return res.status(200).json({ message: "Friend removed" });
   } catch (err) { return res.status(500).json({ error: err.message }); }
 };
-
-// ── Queries ──────────────────────────────────────────────────────────────────
 
 export const getRelationship = async (req, res) => {
   try {

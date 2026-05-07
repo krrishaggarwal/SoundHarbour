@@ -80,18 +80,15 @@ const Navbar = () => {
     <header className="z-50 w-full sticky top-0" style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
       <nav className="max-w-screen-xl mx-auto w-full flex justify-between items-center px-5 h-14">
 
-        {/* Logo */}
         <NavLink to="/" className="text-lg font-black tracking-tight" style={{ color: "var(--text-1)" }}>
           SoundHarbour
         </NavLink>
 
-        {/* Mobile hamburger */}
         <button onClick={() => setShowMenu(!showMenu)} className="lg:hidden p-1"
           style={{ color: "var(--text-2)" }}>
           <FiMenu size={22} />
         </button>
 
-        {/* ── Mobile Sidebar ── */}
         {showMenu && (
           <div className="fixed inset-0 z-50 flex lg:hidden">
             <div className="absolute inset-0 bg-black/60" onClick={() => setShowMenu(false)} />
@@ -133,7 +130,6 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* ── Desktop Nav ── */}
         <div className="hidden lg:flex items-center gap-5">
           {[
             ["/", <GoHome size={16} />, "Home"],

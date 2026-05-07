@@ -114,7 +114,6 @@ const UploadSong = () => {
   return (
     <div className="bg-gray-900 min-h-screen text-white p-5">
       <div className="max-w-4xl mx-auto space-y-8">
-        <h1 className="text-3xl font-bold text-center">Admin Dashboard</h1>
 
         {/* Upload Form */}
         <div className="bg-gray-800 p-6 rounded-lg">

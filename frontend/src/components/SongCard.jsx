@@ -48,7 +48,6 @@ const SongCard = ({ title, artistName, fileId, songId }) => {
       <div className="flex items-center justify-between border-b p-3 lg:w-[70vw] mx-auto transition-colors hover:opacity-90"
         style={{ background: "var(--bg-surface)", borderColor: "var(--border)", color: "var(--text-1)" }}>
 
-        {/* Song info — click to play */}
         <div onClick={handlePlay} className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
           <img src={musicbg} alt="song" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
           <div className="min-w-0">
@@ -57,7 +56,6 @@ const SongCard = ({ title, artistName, fileId, songId }) => {
           </div>
         </div>
 
-        {/* Desktop actions */}
         <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
           <button onClick={handleAddToPlaylist} title="Add to playlist"
             className="p-2 rounded-lg hover:opacity-70 transition-opacity"
@@ -76,7 +74,6 @@ const SongCard = ({ title, artistName, fileId, songId }) => {
           </button>
         </div>
 
-        {/* Mobile — kebab menu */}
         <div className="relative lg:hidden flex-shrink-0">
           <button onClick={() => setShowOptions(!showOptions)} className="p-2"
             style={{ color: "var(--text-2)" }}>

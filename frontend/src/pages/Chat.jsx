@@ -3,14 +3,12 @@ import axios from "axios";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { SongContext } from "../Context/SongContext";
 import { SocketContext } from "../Context/SocketContext";
-
 import { FiSend, FiSearch, FiX, FiPlay, FiMusic, FiList, FiChevronLeft, FiUser } from "react-icons/fi";
 import { BsCheckAll, BsCheck } from "react-icons/bs";
 import { MdOutlineLibraryMusic } from "react-icons/md";
 import musicbg from "../assets/musicbg.jpg";
 import playlist_img from "../assets/playlist.jpg";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtTime = (d) => {
   if (!d) return "";
   const date = new Date(d);
@@ -26,7 +24,6 @@ const myId = () => {
   catch { return null; }
 };
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
 const Av = ({ name, size = "md", online }) => {
   const initials = name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?";
   const palette  = ["from-amber-400 to-orange-500","from-emerald-400 to-teal-600","from-violet-400 to-purple-600","from-rose-400 to-pink-600","from-sky-400 to-blue-600"];
@@ -43,7 +40,6 @@ const Av = ({ name, size = "md", online }) => {
   );
 };
 
-// ─── Song Bubble ─────────────────────────────────────────────────────────────
 const SongBubble = ({ song, onPlay, isMine }) => (
   <div onClick={() => onPlay(song)}
     className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer hover:opacity-90 transition-opacity max-w-[260px]"
@@ -65,7 +61,6 @@ const SongBubble = ({ song, onPlay, isMine }) => (
   </div>
 );
 
-// ─── Playlist Bubble ──────────────────────────────────────────────────────────
 const PlaylistBubble = ({ pl, isMine, onView }) => (
   <div className="flex items-center gap-3 p-3 rounded-2xl max-w-[260px]"
     style={{
@@ -88,7 +83,6 @@ const PlaylistBubble = ({ pl, isMine, onView }) => (
   </div>
 );
 
-// ─── Message Row ──────────────────────────────────────────────────────────────
 const Message = ({ msg, isMine, onPlaySong, onViewPlaylist }) => (
   <div className={`flex ${isMine ? "justify-end" : "justify-start"} mb-1 fade-up`}>
     <div className={`max-w-[78%] flex flex-col gap-1 ${isMine ? "items-end" : "items-start"}`}>
@@ -115,7 +109,6 @@ const Message = ({ msg, isMine, onPlaySong, onViewPlaylist }) => (
   </div>
 );
 
-// ─── Song Picker ──────────────────────────────────────────────────────────────
 const SongPicker = ({ __URL__, onSelect, onClose }) => {
   const [all,  setAll]  = useState([]);
   const [q,    setQ]    = useState("");
@@ -162,7 +155,6 @@ const SongPicker = ({ __URL__, onSelect, onClose }) => {
   );
 };
 
-// ─── Playlist Picker ──────────────────────────────────────────────────────────
 const PlaylistPicker = ({ __URL__, onSelect, onClose }) => {
   const [list, setList] = useState([]);
   useEffect(() => {
@@ -200,7 +192,6 @@ const PlaylistPicker = ({ __URL__, onSelect, onClose }) => {
   );
 };
 
-// ─── Chat Window ──────────────────────────────────────────────────────────────
 const ChatWindow = ({ conversationId, otherUser, onBack }) => {
   const ME = myId();
   const { __URL__, audio, setSongName, setSongArtist, setSongUrl, setIsPlaying } = useContext(SongContext);
@@ -292,7 +283,6 @@ const ChatWindow = ({ conversationId, otherUser, onBack }) => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
         style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <button onClick={onBack} className="lg:hidden p-1 -ml-1 rounded-lg hover:opacity-70 transition-opacity"
@@ -306,7 +296,6 @@ const ChatWindow = ({ conversationId, otherUser, onBack }) => {
             {otherTyping ? "typing…" : online ? "Online" : "Offline"}
           </p>
         </div>
-        {/* View profile button */}
         {otherUser?.isPublic && (
           <Link to={`/user/${otherId}`}
             className="p-2 rounded-xl transition-colors hover:opacity-70"
@@ -315,7 +304,6 @@ const ChatWindow = ({ conversationId, otherUser, onBack }) => {
             <FiUser size={15} />
           </Link>
         )}
-        {/* Always show profile link (even private profiles for friends) */}
         {!otherUser?.isPublic && otherId && (
           <Link to={`/user/${otherId}`}
             className="p-2 rounded-xl transition-colors hover:opacity-70"
@@ -326,7 +314,6 @@ const ChatWindow = ({ conversationId, otherUser, onBack }) => {
         )}
       </div>
 
-      {/* ── Messages ───────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-0.5"
         style={{ background: "var(--bg-base)" }}>
         {loading ? (
@@ -369,25 +356,21 @@ const ChatWindow = ({ conversationId, otherUser, onBack }) => {
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Input Bar ──────────────────────────────────────────── */}
       <div className="flex-shrink-0 px-3 py-3"
         style={{ background: "var(--bg-surface)", borderTop: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
-          {/* Share Song */}
           <button onClick={() => setShowSongPicker(true)} title="Share a song"
             className="w-9 h-9 flex-shrink-0 rounded-xl flex items-center justify-center transition-all hover:opacity-80"
             style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", color: "var(--accent)" }}>
             <FiMusic size={15} />
           </button>
 
-          {/* Share Playlist */}
           <button onClick={() => setShowPLPicker(true)} title="Share a playlist"
             className="w-9 h-9 flex-shrink-0 rounded-xl flex items-center justify-center transition-all hover:opacity-80"
             style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", color: "#a78bfa" }}>
             <MdOutlineLibraryMusic size={15} />
           </button>
 
-          {/* Text input */}
           <input
             value={text}
             onChange={handleInput}
@@ -404,7 +387,6 @@ const ChatWindow = ({ conversationId, otherUser, onBack }) => {
             onBlur={(e)  => e.target.style.borderColor = "var(--border)"}
           />
 
-          {/* Send */}
           <button onClick={sendText} disabled={!text.trim()}
             className="w-9 h-9 flex-shrink-0 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 hover:opacity-80"
             style={{ background: "var(--accent)", color: "#0a0a0f" }}>
@@ -419,7 +401,6 @@ const ChatWindow = ({ conversationId, otherUser, onBack }) => {
   );
 };
 
-// ─── Sidebar Conversation Item ────────────────────────────────────────────────
 const ConvoItem = ({ convo, isActive, onClick, isOnline }) => {
   const online = isOnline(convo.otherUser?._id?.toString());
   return (
@@ -453,7 +434,6 @@ const ConvoItem = ({ convo, isActive, onClick, isOnline }) => {
   );
 };
 
-// ─── Main Chat Page ───────────────────────────────────────────────────────────
 const Chat = () => {
   const { __URL__ } = useContext(SongContext);
   const { isOnline } = useContext(SocketContext);
@@ -465,13 +445,12 @@ const Chat = () => {
   const [activeConvo,   setActiveConvo]   = useState(null);
   const [activeOther,   setActiveOther]   = useState(null);
   const [sidebarTab,    setSidebarTab]    = useState("chats");
-  const [showChatPanel, setShowChatPanel] = useState(false); // mobile
+  const [showChatPanel, setShowChatPanel] = useState(false);
   const [loading,       setLoading]       = useState(true);
 
   const headers     = { "x-auth-token": localStorage.getItem("token") };
   const initialLoad = useRef(false);
 
-  // Load once on mount
   const loadAll = useCallback(async () => {
     try {
       const [convRes, frRes] = await Promise.all([
@@ -489,7 +468,6 @@ const Chat = () => {
     loadAll();
   }, []);
 
-  // Open conversation via URL param (only once after initial load)
   useEffect(() => {
     const withUserId = searchParams.get("with");
     if (withUserId && !loading && !initialLoad.current) {
@@ -499,13 +477,11 @@ const Chat = () => {
   }, [searchParams, loading]);
 
   const openWithUser = async (userId) => {
-    // Don't reload sidebar — just open the conversation
     try {
       const { data } = await axios.get(`${__URL__}/api/v1/chat/with/${userId}`, { headers });
       setActiveConvo(data.conversation);
       setActiveOther(data.otherUser);
       setShowChatPanel(true);
-      // Add to conversations list if not already there
       setConversations((prev) => {
         const exists = prev.find((c) => c._id === data.conversation._id?.toString() || c._id?.toString() === data.conversation._id?.toString());
         if (exists) return prev;
@@ -520,7 +496,6 @@ const Chat = () => {
     setActiveConvo(convo);
     setActiveOther(convo.otherUser);
     setShowChatPanel(true);
-    // Mark read locally without API call
     setConversations((prev) => prev.map((c) =>
       c._id?.toString() === convo._id?.toString() ? { ...c, unreadCount: 0 } : c
     ));
@@ -536,7 +511,6 @@ const Chat = () => {
   return (
     <div className="flex overflow-hidden" style={{ height: "calc(100vh - 56px)" }}>
 
-      {/* ── Sidebar ─────────────────────────────────────────────── */}
       <div className={`${showChatPanel ? "hidden lg:flex" : "flex"} flex-col flex-shrink-0 w-full lg:w-[300px] xl:w-[340px]`}
         style={sidebarStyle}>
 
@@ -545,7 +519,6 @@ const Chat = () => {
           {totalUnread > 0 && <p className="text-xs mt-0.5" style={{ color: "var(--accent)" }}>{totalUnread} unread</p>}
         </div>
 
-        {/* Tabs */}
         <div className="flex px-3 gap-1 pb-3 flex-shrink-0">
           {[["chats", `Chats${totalUnread > 0 ? ` (${totalUnread})` : ""}`], ["friends", `Friends (${friends.length})`]].map(([t, label]) => (
             <button key={t} onClick={() => setSidebarTab(t)}
@@ -560,7 +533,6 @@ const Chat = () => {
           ))}
         </div>
 
-        {/* List */}
         <div className="flex-1 overflow-y-auto px-2 space-y-0.5 pb-4">
           {loading ? (
             <div className="flex justify-center py-8">
@@ -627,7 +599,6 @@ const Chat = () => {
         </div>
       </div>
 
-      {/* ── Chat Panel ──────────────────────────────────────────── */}
       <div className={`${showChatPanel ? "flex" : "hidden lg:flex"} flex-1 flex-col overflow-hidden`}
         style={{ background: "var(--bg-base)" }}>
         {activeConvo ? (

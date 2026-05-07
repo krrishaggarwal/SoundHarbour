@@ -1,3 +1,4 @@
+//authController.js
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import conn from "../config/db.js";
@@ -30,7 +31,6 @@ export const login = async (req, res) => {
       return res.status(400).json({ msg: "Incorrect password" });
     }
 
-    // Store fullName so the Navbar avatar works without extra API call
     return res.status(200).json({
       message: "User logged in",
       status: "success",
